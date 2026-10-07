@@ -13,7 +13,7 @@ the `highway_3d` visualization from [Slopsmith](#credits).
 ## Install
 
 1. Download `slophighway-vX.Y.Z.zip` from the
-   [latest release](https://github.com/gusfurtado0402/slophighway/releases/latest) and unzip it
+   [latest release](https://github.com/slophighwaydev/slophighway/releases/latest) and unzip it
    somewhere you'll keep it (Chrome loads the extension from that folder).
 2. Open `chrome://extensions` and turn on **Developer mode** (top-right toggle).
 3. Click **Load unpacked** and select the unzipped folder, the one that contains `manifest.json`.

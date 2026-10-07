@@ -1,0 +1,126 @@
+#shh-root {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2147483647;
+  pointer-events: none;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.45);
+}
+
+#shh-root.shh-maximized {
+  top: 0;
+}
+
+#shh-root .shh-panel {
+  pointer-events: auto;
+  position: relative;
+  background: #101820;
+}
+
+#shh-root .shh-resize {
+  position: absolute;
+  top: -5px;
+  left: 0;
+  right: 0;
+  height: 10px;
+  cursor: ns-resize;
+  z-index: 5;
+}
+
+#shh-root .shh-resize::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  width: 48px;
+  height: 4px;
+  margin-left: -24px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+#shh-root.shh-maximized .shh-resize,
+#shh-root.shh-collapsed .shh-resize {
+  display: none;
+}
+
+#shh-root .shh-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  box-sizing: border-box;
+  padding: 8px 12px 6px;
+  background: linear-gradient(180deg, rgba(10, 14, 22, 0.96), rgba(10, 14, 22, 0.85));
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: #e8eef7;
+}
+
+#shh-root .shh-brand {
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #7dffa8;
+  white-space: nowrap;
+}
+
+#shh-root .shh-select,
+#shh-root .shh-btn {
+  background: #152033;
+  color: #e8eef7;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-family: inherit;
+}
+
+#shh-root .shh-arrangement {
+  max-width: 360px;
+}
+
+#shh-root .shh-btn {
+  cursor: pointer;
+}
+
+#shh-root .shh-btn:hover,
+#shh-root .shh-select:hover {
+  border-color: rgba(125, 255, 168, 0.5);
+}
+
+#shh-root .shh-sync {
+  font-size: 11px;
+  color: rgba(125, 255, 168, 0.75);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+#shh-root .shh-status {
+  margin-left: auto;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#shh-root .shh-stage {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+}
+
+#shh-root .shh-canvas {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+#shh-root .shh-canvas-3d {
+  visibility: hidden;
+}

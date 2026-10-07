@@ -1,0 +1,21 @@
+{
+  "name": "songsterr-highway",
+  "version": "0.2.0",
+  "description": "Rocksmith-style 3D note highway overlay synced to Songsterr playback.",
+  "license": "AGPL-3.0-only",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "tsc --noEmit && node scripts/build.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.287",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.7"
+  },
+  "dependencies": {
+    "three": "0.170.0"
+  }
+}

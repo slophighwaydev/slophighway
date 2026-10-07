@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "Songsterr Highway",
+  "description": "Rocksmith-style 3D note highway overlay synced to Songsterr playback.",
+  "version": "0.2.0",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "*://www.songsterr.com/*",
+    "*://*.cloudfront.net/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://www.songsterr.com/*", "*://songsterr.com/*"],
+      "js": ["inject.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["*://www.songsterr.com/*", "*://songsterr.com/*"],
+      "js": ["vendor/slopsmith/highway_3d.js", "content.js"],
+      "css": ["assets/overlay.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["vendor/three/three.module.min.js"],
+      "matches": ["*://www.songsterr.com/*", "*://songsterr.com/*"]
+    }
+  ],
+  "action": {
+    "default_title": "Songsterr Highway"
+  }
+}

@@ -6,16 +6,23 @@ import {
 } from "../shared/messages";
 import { readSongsterrMeta, trackJsonUrl } from "../songsterr/state";
 import { buildRsArrangement, type RsArrangement } from "../songsterr/rocksmith";
-import type { SongTiming, SongsterrTrack } from "../songsterr/types";
+import type { SongTiming, SongsterrMeta, SongsterrTrack } from "../songsterr/types";
 import { mountOverlay } from "../overlay/ui";
 
 const arrangements = new Map<number, RsArrangement>();
 const rawTracks = new Map<number, SongsterrTrack>();
 let timing: SongTiming | null = null;
+/** Set from the live store once inject reports it; until then the page's initial #state. */
+let liveMeta: SongsterrMeta | null = null;
+let liveMetaReported = false;
+
+function currentMeta(): SongsterrMeta | null {
+  return liveMetaReported ? liveMeta : readSongsterrMeta();
+}
 
 function timingFor(track: SongsterrTrack): SongTiming | null {
   if (!timing) return null;
-  const meta = readSongsterrMeta();
+  const meta = currentMeta();
   const songId = track.songId ?? meta?.songId;
   if (songId && timing.songId && songId !== timing.songId) return null;
   return timing;
@@ -25,15 +32,16 @@ function safeMount() {
   try {
     return mountOverlay();
   } catch (err) {
-    console.error("[songsterr-highway] overlay mount failed", err);
+    console.error("[slophighway] overlay mount failed", err);
     const fallback = document.createElement("div");
     fallback.id = "shh-root";
-    fallback.textContent = `Songsterr Highway failed to mount: ${String(err)}`;
+    fallback.textContent = `Slophighway failed to mount: ${String(err)}`;
     fallback.style.cssText =
       "position:fixed;bottom:0;left:0;right:0;z-index:2147483647;background:#400;color:#fff;padding:12px;font:14px sans-serif";
     document.documentElement.appendChild(fallback);
     return {
       setArrangements() {},
+      setSongInfo() {},
       setPlayback() {},
       setStatus(text: string) {
         fallback.textContent = text;
@@ -47,7 +55,7 @@ function safeMount() {
 
 const overlay = safeMount();
 overlay.setStatus("content script loaded…");
-console.info("[songsterr-highway] content script active");
+console.info("[slophighway] content script active");
 
 function trackSignature(track: SongsterrTrack): string {
   return `${track.songId ?? ""}:${track.revisionId ?? ""}:${track.measures.length}:${track.name}`;
@@ -60,10 +68,14 @@ function publishArrangements(): void {
 function upsertTrack(partId: number, data: unknown): void {
   const track = data as SongsterrTrack;
   if (!track?.measures?.length) {
-    console.warn("[songsterr-highway] track without measures", partId, data);
+    console.warn("[slophighway] track without measures", partId, data);
     return;
   }
+  const meta = currentMeta();
+  if (meta?.songId && track.songId && track.songId !== meta.songId) return;
   track.partId = partId;
+  const metaTrack = meta?.tracks.find((t) => t.partId === partId);
+  if (!track.name?.trim()) track.name = metaTrack?.name?.trim() || metaTrack?.instrument || `Track ${partId + 1}`;
   const known = rawTracks.get(partId);
   if (known && trackSignature(known) === trackSignature(track)) return;
   rawTracks.set(partId, track);
@@ -74,7 +86,7 @@ function upsertTrack(partId: number, data: unknown): void {
     `${arrangements.size} track(s) · ${arrangement.noteCount} notes · timing:${arrangement.timingSource}`,
   );
   console.info(
-    "[songsterr-highway] arrangement ready",
+    "[slophighway] arrangement ready",
     arrangement.name,
     arrangement.noteCount,
     arrangement.timingSource,
@@ -113,18 +125,36 @@ function loadFromStash(): number {
   return n;
 }
 
+/** Song (and revision) the current arrangements were built for. */
+let loadedSong = "";
+const songKey = (meta: SongsterrMeta) => `${meta.songId}:${meta.revisionId}`;
+
+function applyMeta(meta: SongsterrMeta): void {
+  liveMeta = meta;
+  liveMetaReported = true;
+  overlay.setSongInfo({ title: meta.title, artist: meta.artist });
+  if (songKey(meta) === loadedSong) return;
+  arrangements.clear();
+  rawTracks.clear();
+  if (timing && timing.songId !== meta.songId) timing = null;
+  overlay.setArrangements([]);
+  void hydrateFromDomState();
+}
+
 async function hydrateFromDomState(): Promise<void> {
   const fromStash = loadFromStash();
   if (fromStash) {
     overlay.setStatus(`loaded ${fromStash} track(s) from stash`);
   }
 
-  const meta = readSongsterrMeta();
+  const meta = currentMeta();
   if (!meta) {
-    overlay.setStatus("waiting for Songsterr #state…");
+    overlay.setStatus("waiting for Songsterr song data…");
     return;
   }
 
+  loadedSong = songKey(meta);
+  overlay.setSongInfo({ title: meta.title, artist: meta.artist });
   overlay.setStatus(`${meta.artist} — ${meta.title} · fetching tracks…`);
 
   const results = await Promise.all(
@@ -136,10 +166,12 @@ async function hydrateFromDomState(): Promise<void> {
         const res = await fetch(url);
         if (!res.ok) return `http:${res.status}:${t.partId}`;
         const data = await res.json();
+        // the user may have moved on to another song while this was in flight
+        if (loadedSong !== songKey(meta)) return `stale:${t.partId}`;
         upsertTrack(t.partId, data);
         return `ok:${t.partId}`;
       } catch (err) {
-        console.warn("[songsterr-highway] fetch failed", url, err);
+        console.warn("[slophighway] fetch failed", url, err);
         return `err:${t.partId}`;
       }
     }),
@@ -155,6 +187,12 @@ async function hydrateFromDomState(): Promise<void> {
   }
 }
 
+function onTrackJson(songId: number, partId: number, data: unknown): void {
+  const current = currentMeta()?.songId;
+  if (current && songId && songId !== current) return;
+  upsertTrack(partId, data);
+}
+
 function onBridge(payload: BridgeMessage): void {
   switch (payload.type) {
     case "ready":
@@ -163,15 +201,21 @@ function onBridge(payload: BridgeMessage): void {
       break;
     case "replay":
       for (const msg of payload.messages) {
+        if (msg.type === "song-meta") applyMeta(msg.meta);
+      }
+      for (const msg of payload.messages) {
         if (msg.type === "song-timing") applyTiming(msg.timing);
       }
       for (const msg of payload.messages) {
-        if (msg.type === "track-json") upsertTrack(msg.partId, msg.data);
+        if (msg.type === "track-json") onTrackJson(msg.songId, msg.partId, msg.data);
       }
       if (!arrangements.size) void hydrateFromDomState();
       break;
+    case "song-meta":
+      applyMeta(payload.meta);
+      break;
     case "track-json":
-      upsertTrack(payload.partId, payload.data);
+      onTrackJson(payload.songId, payload.partId, payload.data);
       break;
     case "song-timing":
       applyTiming(payload.timing);
@@ -185,7 +229,7 @@ function onBridge(payload: BridgeMessage): void {
       );
       break;
     case "debug":
-      console.debug("[songsterr-highway]", payload.message);
+      console.debug("[slophighway]", payload.message);
       break;
     default:
       break;
@@ -215,16 +259,13 @@ if (stashEl) {
   obs.observe(document.documentElement, { childList: true, subtree: true });
 }
 
+// Song changes are driven by the "song-meta" reports (the URL also changes on track switches);
+// a URL change just asks inject for a fresh replay.
 let lastHref = location.href;
 setInterval(() => {
   if (location.href !== lastHref) {
     lastHref = location.href;
-    arrangements.clear();
-    rawTracks.clear();
-    timing = null;
-    overlay.setArrangements([]);
-    postCommand("hello");
-    void hydrateFromDomState();
+    postCommand("request-replay");
   }
   // Keep pinging until we have notes.
   if (!arrangements.size) {

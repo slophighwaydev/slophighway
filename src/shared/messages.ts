@@ -1,7 +1,7 @@
-import type { SongTiming } from "../songsterr/types";
+import type { SongTiming, SongsterrMeta } from "../songsterr/types";
 
-export const CHANNEL = "songsterr-highway";
-export const CMD_CHANNEL = "songsterr-highway-cmd";
+export const CHANNEL = "slophighway";
+export const CMD_CHANNEL = "slophighway-cmd";
 export const STASH_ID = "shh-track-stash";
 
 export type TrackJsonMessage = {
@@ -26,10 +26,17 @@ export type SongTimingMessage = {
   timing: SongTiming;
 };
 
+/** The song currently open in Songsterr, read from the live store (follows client-side navigation). */
+export type SongMetaMessage = {
+  type: "song-meta";
+  meta: SongsterrMeta;
+};
+
 export type BridgeMessage =
   | TrackJsonMessage
   | PlayerTickMessage
   | SongTimingMessage
+  | SongMetaMessage
   | { type: "ready" }
   | { type: "debug"; message: string }
   | { type: "replay"; messages: BridgeMessage[] };
@@ -70,6 +77,13 @@ export function writeTrackStash(partId: number, data: unknown): void {
   }
   stash[String(partId)] = data;
   el.textContent = JSON.stringify(stash);
+  el.dataset.updatedAt = String(Date.now());
+}
+
+export function clearTrackStash(): void {
+  const el = document.getElementById(STASH_ID);
+  if (!el) return;
+  el.textContent = "{}";
   el.dataset.updatedAt = String(Date.now());
 }
 

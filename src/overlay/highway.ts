@@ -41,10 +41,12 @@ export class Highway2D implements HighwayView {
   private raf = 0;
   private arrangement: RsArrangement | null = null;
   private notes: RsNote[] = [];
+  private transparent: boolean;
 
-  constructor(stage: HTMLElement, clock: PlaybackClock) {
+  constructor(stage: HTMLElement, clock: PlaybackClock, transparent = false) {
     this.stage = stage;
     this.clock = clock;
+    this.transparent = transparent;
     this.canvas = document.createElement("canvas");
     this.canvas.className = "shh-canvas";
     stage.appendChild(this.canvas);
@@ -86,11 +88,13 @@ export class Highway2D implements HighwayView {
     const h = canvas.clientHeight;
     ctx.clearRect(0, 0, w, h);
 
-    const grad = ctx.createLinearGradient(0, 0, 0, h);
-    grad.addColorStop(0, "rgba(8, 12, 20, 0.92)");
-    grad.addColorStop(1, "rgba(12, 20, 32, 0.96)");
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, w, h);
+    if (!this.transparent) {
+      const grad = ctx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, "rgba(8, 12, 20, 0.92)");
+      grad.addColorStop(1, "rgba(12, 20, 32, 0.96)");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+    }
 
     const arr = this.arrangement;
     if (!arr) {

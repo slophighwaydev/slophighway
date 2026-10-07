@@ -54,6 +54,8 @@ export type RsArrangement = {
   durationSec: number;
   timingSource: "songsterr" | "computed";
   noteCount: number;
+  /** Original tuning name when the chart was converted to E standard. */
+  retunedFrom?: string;
 };
 
 const SUSTAIN_MIN_SEC = 0.35;
@@ -80,7 +82,7 @@ function reportUnknown(kind: string, value: unknown): void {
   const key = `${kind}=${String(value)}`;
   if (reportedUnknown.has(key)) return;
   reportedUnknown.add(key);
-  console.info("[songsterr-highway] unmapped technique", key);
+  console.info("[slophighway] unmapped technique", key);
 }
 
 /** `duration` is a fraction of a whole note with dots and tuplets already applied. */

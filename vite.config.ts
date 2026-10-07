@@ -6,6 +6,7 @@ const entries = {
   content: resolve(__dirname, "src/content/index.ts"),
   inject: resolve(__dirname, "src/inject/main.ts"),
   background: resolve(__dirname, "src/background.ts"),
+  detached: resolve(__dirname, "src/detached/main.ts"),
 } as const;
 
 export default defineConfig(({ mode }) => {

@@ -1,6 +1,6 @@
 {
-  "name": "songsterr-highway",
-  "version": "0.2.0",
+  "name": "slophighway",
+  "version": "0.6.2",
   "description": "Rocksmith-style 3D note highway overlay synced to Songsterr playback.",
   "license": "AGPL-3.0-only",
   "private": true,

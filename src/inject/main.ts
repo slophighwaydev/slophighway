@@ -1,12 +1,15 @@
 import {
+  clearTrackStash,
   CMD_CHANNEL,
   postToBridge,
   writeTrackStash,
   type BridgeMessage,
   type PlayerTickMessage,
+  type SongMetaMessage,
   type SongTimingMessage,
   type TrackJsonMessage,
 } from "../shared/messages";
+import { parseMeta, type RawMetaCurrent } from "../songsterr/state";
 import type { SongTiming } from "../songsterr/types";
 
 const TRACK_JSON_RE =
@@ -27,6 +30,7 @@ function parseTrackUrl(url: string) {
 }
 
 function publishTrack(msg: TrackJsonMessage): void {
+  if (currentSongId != null && msg.songId !== currentSongId) return;
   trackCache.set(msg.partId, msg);
   writeTrackStash(msg.partId, msg.data);
   postToBridge(msg);
@@ -63,6 +67,7 @@ function backfillTrackJson(): void {
   for (const entry of entries) {
     const parsed = parseTrackUrl(entry.name);
     if (!parsed || trackCache.has(parsed.partId)) continue;
+    if (currentSongId != null && parsed.songId !== currentSongId) continue;
     fetch(entry.name)
       .then((r) => r.json())
       .then((data) => publishTrack({ type: "track-json", url: entry.name, ...parsed, data }))
@@ -98,6 +103,7 @@ type SongsterrStore = {
     player?: { instance?: SongsterrPlayerInstance | null; speed?: number };
     cursor?: { position?: { cursor?: number } };
     part?: { current?: ProcessedPart | null };
+    meta?: { current?: RawMetaCurrent | null };
   };
 };
 
@@ -280,10 +286,39 @@ function pollTiming(s: SongsterrStore | null): void {
   postToBridge(timingMessage);
 }
 
+// --- Current song -----------------------------------------------------------
+//
+// Songsterr switches songs client-side, so the server-rendered #state keeps describing the first
+// song. The store's meta.current follows navigation; when it changes, tracks cached for the
+// previous song must go.
+
+let currentSongId: number | null = null;
+let metaMessage: SongMetaMessage | null = null;
+let metaKey = "";
+
+function pollMeta(s: SongsterrStore | null): void {
+  const meta = parseMeta(s?.state.meta?.current);
+  if (!meta) return;
+  const key = `${meta.songId}:${meta.revisionId}`;
+  if (key === metaKey) return;
+  metaKey = key;
+  if (meta.songId !== currentSongId) {
+    currentSongId = meta.songId;
+    for (const [partId, msg] of trackCache) if (msg.songId !== meta.songId) trackCache.delete(partId);
+    if (timingMessage && timingMessage.timing.songId !== meta.songId) timingMessage = null;
+    clearTrackStash();
+    for (const msg of trackCache.values()) writeTrackStash(msg.partId, msg.data);
+  }
+  metaMessage = { type: "song-meta", meta };
+  postToBridge(metaMessage);
+}
+
 // --- Bridge ---------------------------------------------------------------
 
 function replayToContent(): void {
-  const messages: BridgeMessage[] = [{ type: "ready" }, ...trackCache.values()];
+  const messages: BridgeMessage[] = [{ type: "ready" }];
+  if (metaMessage) messages.push(metaMessage);
+  messages.push(...trackCache.values());
   if (timingMessage) messages.push(timingMessage);
   postToBridge({ type: "replay", messages });
 }
@@ -300,7 +335,11 @@ function boot(): void {
   window.addEventListener("message", onWindowMessage);
   postToBridge({ type: "ready" });
   window.setInterval(tick, 50);
-  window.setInterval(() => pollTiming(getStore()), 1000);
+  window.setInterval(() => {
+    const s = getStore();
+    pollMeta(s);
+    pollTiming(s);
+  }, 1000);
   window.setInterval(backfillTrackJson, 2000);
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", backfillTrackJson, { once: true });

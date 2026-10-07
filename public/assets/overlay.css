@@ -1,32 +1,65 @@
 #shh-root {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
   z-index: 2147483647;
   pointer-events: none;
   font-family: "Segoe UI", system-ui, sans-serif;
-  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.45);
-}
-
-#shh-root.shh-maximized {
-  top: 0;
 }
 
 #shh-root .shh-panel {
-  pointer-events: auto;
   position: relative;
   background: #101820;
 }
 
+#shh-root .shh-toolbar,
+#shh-root .shh-resize,
+#shh-root .shh-stage {
+  pointer-events: auto;
+}
+
+#shh-root.shh-dock-bottom .shh-panel {
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.45);
+}
+
+#shh-root.shh-dock-top .shh-panel {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+}
+
+#shh-root.shh-dock-float .shh-panel {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+}
+
+#shh-root.shh-transparent .shh-panel {
+  background: transparent;
+  box-shadow: none;
+}
+
+/* With a clear background the highway must not swallow clicks meant for the tab underneath. */
+#shh-root.shh-transparent .shh-stage {
+  pointer-events: none;
+}
+
+#shh-root.shh-transparent.shh-dock-float .shh-panel {
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
 #shh-root .shh-resize {
   position: absolute;
-  top: -5px;
   left: 0;
   right: 0;
   height: 10px;
   cursor: ns-resize;
   z-index: 5;
+}
+
+#shh-root.shh-dock-bottom .shh-resize {
+  top: -5px;
+}
+
+#shh-root.shh-dock-top .shh-resize {
+  bottom: -5px;
 }
 
 #shh-root .shh-resize::after {
@@ -38,24 +71,66 @@
   height: 4px;
   margin-left: -24px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.28);
 }
 
-#shh-root.shh-maximized .shh-resize,
+#shh-root.shh-dock-float .shh-resize {
+  left: auto;
+  right: 0;
+  bottom: 0;
+  width: 18px;
+  height: 18px;
+  cursor: nwse-resize;
+}
+
+#shh-root.shh-dock-float .shh-resize::after {
+  top: auto;
+  left: auto;
+  right: 3px;
+  bottom: 3px;
+  width: 10px;
+  height: 10px;
+  margin: 0;
+  border-radius: 0 0 4px 0;
+  background: none;
+  border-right: 2px solid rgba(255, 255, 255, 0.45);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.45);
+}
+
+#shh-root .shh-btn.shh-on {
+  border-color: rgba(125, 255, 168, 0.8);
+  color: #7dffa8;
+}
+
+#shh-root.shh-is-detached .shh-quality,
+#shh-root.shh-is-detached .shh-view,
+#shh-root.shh-is-detached .shh-bg,
+#shh-root.shh-is-detached .shh-max,
+#shh-root.shh-is-detached .shh-collapse {
+  display: none;
+}
+
+#shh-root.shh-dock-max .shh-resize,
 #shh-root.shh-collapsed .shh-resize {
   display: none;
 }
 
 #shh-root .shh-toolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
-  height: 44px;
+  gap: 6px 10px;
+  min-height: 44px;
   box-sizing: border-box;
   padding: 8px 12px 6px;
   background: linear-gradient(180deg, rgba(10, 14, 22, 0.96), rgba(10, 14, 22, 0.85));
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   color: #e8eef7;
+}
+
+#shh-root.shh-dock-float .shh-toolbar {
+  cursor: move;
+  border-top: none;
 }
 
 #shh-root .shh-brand {
@@ -76,14 +151,11 @@
   padding: 4px 8px;
   font-size: 12px;
   font-family: inherit;
+  cursor: pointer;
 }
 
 #shh-root .shh-arrangement {
-  max-width: 360px;
-}
-
-#shh-root .shh-btn {
-  cursor: pointer;
+  max-width: 320px;
 }
 
 #shh-root .shh-btn:hover,
@@ -105,6 +177,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
 }
 
 #shh-root .shh-stage {
@@ -123,4 +196,97 @@
 
 #shh-root .shh-canvas-3d {
   visibility: hidden;
+}
+
+#shh-root .shh-track-badge {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  z-index: 4;
+  transform: translateX(-50%) scale(1);
+  transform-origin: top center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(10, 14, 22, 0.72);
+  border: 1px solid rgba(125, 255, 168, 0.35);
+  color: #e8eef7;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: transform 0.35s ease, background 0.35s ease, border-color 0.35s ease;
+}
+
+#shh-root .shh-song-info {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  z-index: 4;
+  max-width: 34%;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(10, 14, 22, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: right;
+  pointer-events: none;
+  line-height: 1.3;
+}
+
+#shh-root .shh-song-title {
+  color: #e8eef7;
+  font-size: 14px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#shh-root .shh-song-artist {
+  color: rgba(232, 238, 247, 0.7);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#shh-root .shh-song-tuning {
+  color: #7dffa8;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+#shh-root .shh-song-tuning:empty,
+#shh-root .shh-song-artist:empty,
+#shh-root .shh-song-title:empty {
+  display: none;
+}
+
+#shh-root .shh-controls-legend {
+  position: absolute;
+  left: 10px;
+  bottom: 8px;
+  z-index: 4;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(10, 14, 22, 0.55);
+  color: rgba(232, 238, 247, 0.6);
+  font-size: 10px;
+  line-height: 1.5;
+  pointer-events: none;
+}
+
+#shh-root .shh-controls-legend kbd {
+  display: inline-block;
+  min-width: 26px;
+  font: inherit;
+  font-weight: 700;
+  color: rgba(232, 238, 247, 0.85);
+}
+
+#shh-root .shh-track-badge.shh-flash {
+  transform: translateX(-50%) scale(1.9);
+  background: rgba(10, 14, 22, 0.9);
+  border-color: rgba(125, 255, 168, 0.9);
+  color: #7dffa8;
 }

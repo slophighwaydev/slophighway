@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Slophighway</title>
+    <link rel="stylesheet" href="assets/overlay.css" />
+    <link rel="stylesheet" href="assets/detached.css" />
+  </head>
+  <body>
+    <div id="shh-root" class="shh-detached-page">
+      <div class="shh-panel">
+        <div class="shh-toolbar">
+          <div class="shh-brand">Slophighway</div>
+          <select class="shh-select shh-arrangement" aria-label="Arrangement" title="Switch tracks with keys 1–9"></select>
+          <select class="shh-select shh-view" aria-label="View">
+            <option value="3d">3D</option>
+            <option value="2d">2D (light)</option>
+          </select>
+          <select class="shh-select shh-quality" aria-label="Quality" title="Lower quality renders fewer pixels and caps the frame rate at 60"></select>
+          <button type="button" class="shh-btn shh-std" title="Re-fret every track for E standard tuning"></button>
+          <button type="button" class="shh-btn shh-full" title="Full screen (or double-click the highway)">
+            Full screen
+          </button>
+          <span class="shh-status"></span>
+        </div>
+        <div class="shh-stage"></div>
+      </div>
+    </div>
+    <script src="vendor/slopsmith/highway_3d.js"></script>
+    <script src="detached.js"></script>
+  </body>
+</html>

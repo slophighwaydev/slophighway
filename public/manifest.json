@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Songsterr Highway",
-  "description": "Rocksmith-style 3D note highway overlay synced to Songsterr playback.",
-  "version": "0.2.0",
+  "name": "Slophighway",
+  "description": "3D guitar/bass note highway that runs on top of Songsterr tabs, synced to its playback.",
+  "version": "0.6.2",
   "permissions": ["storage"],
   "host_permissions": [
     "*://www.songsterr.com/*",
@@ -32,6 +32,6 @@
     }
   ],
   "action": {
-    "default_title": "Songsterr Highway"
+    "default_title": "Slophighway"
   }
 }

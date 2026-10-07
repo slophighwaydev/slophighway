@@ -1,0 +1,15 @@
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #101820;
+}
+
+#shh-root.shh-detached-page {
+  inset: 0;
+}
+
+body.shh-fullscreen #shh-root .shh-toolbar {
+  display: none;
+}

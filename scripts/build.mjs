@@ -4,7 +4,7 @@ import { dirname, resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
 const distDir = resolve(root, "dist");
-const entries = ["content", "inject", "background"];
+const entries = ["content", "inject", "background", "detached"];
 
 for (const entry of entries) {
   const result = spawnSync("npx", ["vite", "build"], {
@@ -34,19 +34,41 @@ copyFile(
 );
 copyFile(resolve(root, "node_modules/three/LICENSE"), resolve(distDir, "vendor/three/LICENSE"));
 
-// Slopsmith highway_3d (AGPL-3.0). The only change is where Three.js is loaded
-// from: Slopsmith's server path becomes the copy bundled in the extension.
+// Slopsmith highway_3d (AGPL-3.0), patched at build time:
+// - Three.js is loaded from the copy bundled in the extension instead of Slopsmith's server.
+// - The background style defaults to "off" (the particle field costs frames and adds nothing here).
+// - The section HUD defaults to the bottom-right corner; the overlay's song info owns the top-right.
+// - With `globalThis.__shhHighway.transparent` the canvas clears to alpha 0 and fog is
+//   dropped, since fog would fade distant notes into an opaque colour over the page.
+// - `globalThis.__shhHighway.antialias === false` turns MSAA off for the performance preset.
 const screenSrc = resolve(root, "vendor/slopsmith/highway_3d/screen.js");
-const original = readFileSync(screenSrc, "utf8");
-const threeUrlLine = "const THREE_URL = '/static/vendor/three/three.module.min.js';";
-if (!original.includes(threeUrlLine)) {
-  console.error("Slopsmith screen.js: THREE_URL line not found; update scripts/build.mjs");
-  process.exit(1);
+let patched = readFileSync(screenSrc, "utf8");
+const transparentExpr = "!!(globalThis.__shhHighway && globalThis.__shhHighway.transparent)";
+const antialiasExpr = "!(globalThis.__shhHighway && globalThis.__shhHighway.antialias === false)";
+const patches = [
+  [
+    "const THREE_URL = '/static/vendor/three/three.module.min.js';",
+    "const THREE_URL = chrome.runtime.getURL('vendor/three/three.module.min.js');",
+  ],
+  ["const BG_DEFAULTS = { style: 'particles',", "const BG_DEFAULTS = { style: 'off',"],
+  ["sectionHudPosition: 'tr'", "sectionHudPosition: 'br'"],
+  [
+    "ren = new T.WebGLRenderer({ antialias: true });",
+    `ren = new T.WebGLRenderer({ antialias: ${antialiasExpr}, alpha: true });`,
+  ],
+  ["ren.setClearColor(0x101820);", `ren.setClearColor(0x101820, ${transparentExpr} ? 0 : 1);`],
+  [
+    "scene.fog = new T.Fog(0x101820, FOG_START * 0.8, FOG_END * 1.2);",
+    `scene.fog = ${transparentExpr} ? null : new T.Fog(0x101820, FOG_START * 0.8, FOG_END * 1.2);`,
+  ],
+];
+for (const [from, to] of patches) {
+  if (!patched.includes(from)) {
+    console.error(`Slopsmith screen.js: patch target not found, update scripts/build.mjs:\n  ${from}`);
+    process.exit(1);
+  }
+  patched = patched.replace(from, to);
 }
-const patched = original.replace(
-  threeUrlLine,
-  "const THREE_URL = chrome.runtime.getURL('vendor/three/three.module.min.js');",
-);
 mkdirSync(resolve(distDir, "vendor/slopsmith"), { recursive: true });
 writeFileSync(resolve(distDir, "vendor/slopsmith/highway_3d.js"), patched);
 copyFile(resolve(root, "vendor/slopsmith/LICENSE"), resolve(distDir, "vendor/slopsmith/LICENSE"));

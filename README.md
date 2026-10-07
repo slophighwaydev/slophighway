@@ -1,70 +1,111 @@
-# Songsterr Highway
+# Slophighway
 
-Free, open-source Chrome extension that draws a **Rocksmith-style 3D note highway** on top of
-[Songsterr](https://www.songsterr.com), synced to Songsterr's own playback (synth or original audio).
+Free, open-source Chrome extension that draws a **3D note highway** for guitar and bass on top of
+the tabs at [songsterr.com](https://www.songsterr.com), synced to the site's own playback.
 
-Notes come from the horizon onto a fretboard, with the Rocksmith string colors and technique
-markers: bends, slides, hammer-ons / pull-offs, tapping, palm mutes, fret-hand mutes, natural and
-pinch harmonics, vibrato, tremolo picking, accents and chord frames. The 3D renderer is the
-`highway_3d` visualization from [Slopsmith](#credits).
+Notes fly in from the horizon onto a fretboard, in the style of Rocksmith, with string colors and
+technique markers: bends, slides, hammer-ons / pull-offs, tapping, palm mutes, fret-hand mutes,
+natural and pinch harmonics, vibrato, tremolo picking, accents and chord frames. The 3D renderer is
+the `highway_3d` visualization from [Slopsmith](#credits).
 
-> Português: extensão gratuita e de código aberto que desenha uma note highway 3D no estilo do
-> Rocksmith por cima do Songsterr, sincronizada com o player do próprio Songsterr. O áudio continua
-> vindo do Songsterr; a extensão só desenha.
+> Not affiliated with, endorsed by or connected to Songsterr, Ubisoft or Rocksmith.
+
+## Install
+
+1. Download `slophighway-vX.Y.Z.zip` from the
+   [latest release](https://github.com/gusfurtado0402/slophighway/releases/latest) and unzip it
+   somewhere you'll keep it (Chrome loads the extension from that folder).
+2. Open `chrome://extensions` and turn on **Developer mode** (top-right toggle).
+3. Click **Load unpacked** and select the unzipped folder, the one that contains `manifest.json`.
+4. Open any tab on songsterr.com and press Play.
+
+Works in Chrome and other Chromium browsers (Edge, Brave, Opera, Vivaldi) on any OS.
+
+**Updating:** download the new zip, replace the contents of the same folder, then click the reload
+icon on the extension's card in `chrome://extensions` and refresh the Songsterr tab.
+
+## Features
+
+**Highway**
+
+- Synced to the site's player: play, pause, seek, speed changes and loops.
+- Guitar and bass, any number of strings, with techniques, chords, sections and repeats.
+- Light 2D view as an alternative, and as a fallback for machines without WebGL2.
+
+**Tracks and tuning**
+
+- Pick the arrangement from the dropdown, or press `1`–`9` to switch tracks on the fly
+  (lead → rhythm → bass…). Switching is instant, without reloading the highway.
+- A badge shows the track you're on and pops up when it changes.
+- **E Std** converts any tuning (Drop D, Eb, Open G…) to E Standard frets. It may look odd, but it
+  lets you play everything without retuning.
+- Song title, artist and tuning in the top-right corner (with the original tuning when converted,
+  and the capo).
+- Follows you as you browse to other songs, no page reload needed.
+
+**Layout**
+
+- Dock the highway at the **top** or **bottom** of the page, or use a **floating** panel you can
+  drag and resize. The site's controls stay reachable.
+- **Clear** background mode: the page shows through the highway, and clicks pass through to it.
+- **Full** (highway fills the window) and **Hide**.
+- **Detach** opens the highway in its own window: put it on a second monitor or make it full screen
+  (double-click). It has its own track picker, view, quality and E Std controls, and `Space` /
+  `1`–`9` work there too. Close it to bring the highway back to the tab.
+- Preferences are remembered.
+
+**Performance**
+
+- Quality presets: **High**, **Balanced** (default, 60 fps cap) and **Performance** (60 fps cap,
+  lower resolution, no antialiasing). If it stutters, try Performance.
+
+**Keyboard**
+
+| Key | Action |
+| --- | --- |
+| `1`–`9` | Switch track |
+| `Space` | Play / pause |
+| Double-click (detached window) | Full screen |
 
 ## What it does (and doesn't)
 
-- Reads the tab data **your browser already loaded** for the Songsterr page you're on, and the
-  player's position, and draws the highway.
-- Audio is Songsterr's: synth, or original audio with Songsterr Plus.
-- It does **not** download, export or save tabs, does not bypass Songsterr Plus, and does not talk to
-  any server other than Songsterr's own CDN.
-- Not affiliated with Songsterr, Ubisoft or Rocksmith.
+- Reads the tab data **your browser already loaded** for the page you're on, plus the player's
+  position, and draws the highway. Audio is the site's own.
+- It does **not** download, export or save tabs, does not bypass any paid feature, and does not send
+  data anywhere. The only permission it asks for is `storage`, for your preferences.
 
-## Install (from source)
+## Build from source
+
+Requires Node.js 18 or newer.
 
 ```bash
 npm install
 npm run build
 ```
 
-1. Open `chrome://extensions` and enable **Developer mode**.
-2. **Load unpacked** and select the `dist/` folder.
-3. Open any Songsterr tab and press Play.
-
-The panel at the bottom has: arrangement picker (defaults to the track you're viewing in Songsterr),
-**3D / 2D (light)** view, **Full** (full-screen highway) and **Hide**. Drag the top edge to resize.
-Preferences are remembered.
-
-## Develop
-
-```bash
-npm run dev
-```
-
-Rebuilds on every change in `src/`, `public/` or `vendor/`; then reload the extension in
-`chrome://extensions` and refresh the Songsterr tab.
+Then load the `dist/` folder with **Load unpacked** as above. For development, `npm run dev`
+rebuilds on every change in `src/`, `public/` or `vendor/`; reload the extension in
+`chrome://extensions` and refresh the tab afterwards.
 
 ## How it works
 
-1. `src/inject/main.ts` (page context) captures the track JSON Songsterr fetches from its CDN and
-   reads Songsterr's app store for the live clock (`player.getPosition().cursor`, in ms) and the
-   song timing (`part.current.progression` + per-beat `timestamps`, with repeats already expanded).
-2. `src/songsterr/rocksmith.ts` converts Songsterr measures into a Rocksmith-like chart (seconds,
+1. `src/inject/main.ts` runs in the page and captures the track JSON the site fetches from its CDN,
+   plus the app store's live clock (`player.getPosition().cursor`, in ms), song timing
+   (`part.current.progression` with per-beat `timestamps`, repeats already expanded) and current song.
+2. `src/songsterr/rocksmith.ts` converts the tab's measures into a Rocksmith-like chart (seconds,
    string 0 = lowest string): repeats and alternate endings, ties, sustains, swing, grace notes,
-   chords and technique flags. When Songsterr's timing isn't available it computes the same timeline
-   from tempo automations.
+   chords and technique flags. When the site's timing isn't available it computes the same
+   timeline from tempo automations.
 3. `src/overlay/host3d.ts` feeds that chart to the Slopsmith renderer every animation frame;
-   `src/overlay/highway.ts` is a lightweight 2D fallback for machines without WebGL2.
+   `src/overlay/highway.ts` is the lightweight 2D view.
 
-Converter accuracy was checked against Songsterr's own note timestamps (Cowboys From Hell,
+Converter accuracy was checked against the site's own note timestamps (Cowboys From Hell,
 Eruption, Quebre as Correntes): at most 17 ms off, on a grace note, and exact elsewhere.
 
 ## Credits
 
-- **[Slopsmith](https://github.com/JayMan8-1/slopsmith)** — the `highway_3d` renderer
-  (AGPL-3.0). Used unmodified except for where it loads Three.js from; see
-  [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+- **[Slopsmith](https://github.com/JayMan8-1/slopsmith)**: the `highway_3d` renderer (AGPL-3.0).
+  Shipped with a few build-time tweaks listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 - **[Three.js](https://threejs.org)** r170 (MIT).
 
 ## License

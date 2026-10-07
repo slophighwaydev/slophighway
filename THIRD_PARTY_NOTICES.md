@@ -1,6 +1,6 @@
 # Third-party notices
 
-Songsterr Highway is licensed under the GNU Affero General Public License v3.0 (see `LICENSE`).
+Slophighway is licensed under the GNU Affero General Public License v3.0 (see `LICENSE`).
 It bundles the following third-party software.
 
 ## Slopsmith — 3D Highway visualization (`highway_3d`)
@@ -10,9 +10,15 @@ It bundles the following third-party software.
   later `github.com/slopsmith/slopsmith`). The copy used here comes from the public mirror
   [JayMan8-1/slopsmith](https://github.com/JayMan8-1/slopsmith), plugin `plugins/highway_3d`, version 3.18.0.
 - License: GNU Affero General Public License v3.0 (`vendor/slopsmith/LICENSE`)
-- Modifications: the file in `vendor/` is unmodified. At build time `scripts/build.mjs` replaces one line,
-  the `THREE_URL` constant, so Three.js is loaded from the copy bundled inside the extension
-  (`chrome.runtime.getURL('vendor/three/three.module.min.js')`) instead of Slopsmith's server path.
+- Modifications: the file in `vendor/` is unmodified. At build time `scripts/build.mjs` applies these
+  small text replacements to the shipped copy:
+  - `THREE_URL` loads Three.js from the copy bundled inside the extension
+    (`chrome.runtime.getURL('vendor/three/three.module.min.js')`) instead of Slopsmith's server path.
+  - The background style defaults to `off` instead of `particles`.
+  - The section HUD defaults to the bottom-right corner instead of the top-right.
+  - The WebGL renderer is created with `alpha: true`, and antialiasing can be turned off by the
+    extension's performance preset.
+  - In the extension's transparent mode the canvas clears to alpha 0 and the scene fog is disabled.
 
 ## Three.js r170
 
